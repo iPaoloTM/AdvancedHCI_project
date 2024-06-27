@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import math
 
 # Initialize MediaPipe Pose.
 mp_pose = mp.solutions.pose
@@ -22,9 +23,9 @@ cap = cv2.VideoCapture(0)
 
 def get_angle(a, b, c):
     # Calculate the angle between points a, b, and c
-    a = np.array(a)  # First point
-    b = np.array(b)  # Middle point
-    c = np.array(c)  # End point
+    a = np.array(a)
+    b = np.array(b)
+    c = np.array(c)
 
     radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
     angle = np.abs(radians * 180.0 / np.pi)
@@ -34,6 +35,38 @@ def get_angle(a, b, c):
 
     return angle
 
+# Function to calculate angle between two vectors
+def get_angle_between_vectors(v1, v2):
+    dot_product = sum(x*y for x, y in zip(v1, v2))
+    magnitude_v1 = math.sqrt(sum(x**2 for x in v1))
+    magnitude_v2 = math.sqrt(sum(x**2 for x in v2))
+    cosine_angle = dot_product / (magnitude_v1 * magnitude_v2)
+    angle = math.acos(cosine_angle)
+    return math.degrees(angle)
+
+# Function to calculate vector from two points
+def get_vector(p1, p2):
+    return [p2[0] - p1[0], p2[1] - p1[1]]
+
+
+
+# Function to calculate the Euclidean distance between two points
+def compute_distance(point1, point2):
+    return math.sqrt((point2.x - point1.x) ** 2 + (point2.y - point1.y) ** 2)
+
+# Function to detect if the legs are open or closed
+def detect_leg_position(left_knee, right_knee, left_ankle, right_ankle, threshold=0.1):
+    knee_distance = compute_distance(left_knee, right_knee)
+    print("knee_distance ",knee_distance)
+
+    # Use either knee_distance to determine leg position
+    if knee_distance < threshold:
+        return 'closed'
+    else:
+        return 'open'
+
+
+
 while cap.isOpened():
     success, image = cap.read()
     if not success:
@@ -42,18 +75,12 @@ while cap.isOpened():
 
     # Convert the BGR image to RGB.
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)     # Process the image and detect the pose.
 
-    # Process the image and detect the pose.
-    results = pose.process(image_rgb)
+
 
     # Draw the pose annotation on the image.
     if results.pose_landmarks:
-        # Draw the full body landmarks.
-        mp_drawing.draw_landmarks(
-            image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-            mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
-            mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2))
-
         right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
         right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
         right_wrist = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_WRIST]
@@ -61,69 +88,99 @@ while cap.isOpened():
         left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
         left_wrist = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
 
+        right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+        left_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+        right_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_KNEE]
+        left_knee = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_KNEE]
+        right_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ANKLE]
+        left_ankle = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ANKLE]
+
+
+        # Draw right arm
+        cv2.line(image, (int(right_shoulder.x * image.shape[1]), int(right_shoulder.y * image.shape[0])),(int(right_elbow.x * image.shape[1]), int(right_elbow.y * image.shape[0])), (0, 255, 0), 2)
+        cv2.line(image, (int(right_elbow.x * image.shape[1]), int(right_elbow.y * image.shape[0])),(int(right_wrist.x * image.shape[1]), int(right_wrist.y * image.shape[0])), (0, 255, 0), 2)
+
+        # Draw left arm
+        cv2.line(image, (int(left_shoulder.x * image.shape[1]), int(left_shoulder.y * image.shape[0])), (int(left_elbow.x * image.shape[1]), int(left_elbow.y * image.shape[0])), (0, 255, 0), 2)
+        cv2.line(image, (int(left_elbow.x * image.shape[1]), int(left_elbow.y * image.shape[0])), (int(left_wrist.x * image.shape[1]), int(left_wrist.y * image.shape[0])), (0, 255, 0), 2)
+
+        # Draw torso
+        cv2.line(image, (int(right_shoulder.x * image.shape[1]), int(right_shoulder.y * image.shape[0])),(int(left_shoulder.x * image.shape[1]), int(left_shoulder.y * image.shape[0])), (0, 255, 0), 2)
+        cv2.line(image, (int(right_hip.x * image.shape[1]), int(right_hip.y * image.shape[0])),(int(left_hip.x * image.shape[1]), int(left_hip.y * image.shape[0])), (0, 255, 0), 2)
+        cv2.line(image, (int(right_shoulder.x * image.shape[1]), int(right_shoulder.y * image.shape[0])),(int(right_hip.x * image.shape[1]), int(right_hip.y * image.shape[0])), (0, 255, 0), 2)
+        cv2.line(image, (int(left_shoulder.x * image.shape[1]), int(left_shoulder.y * image.shape[0])),(int(left_hip.x * image.shape[1]), int(left_hip.y * image.shape[0])), (0, 255, 0), 2)
+
+        # Draw right leg
+        cv2.line(image, (int(right_hip.x * image.shape[1]), int(right_hip.y * image.shape[0])), (int(right_knee.x * image.shape[1]), int(right_knee.y * image.shape[0])), (0, 255, 0), 2)
+        cv2.line(image, (int(right_knee.x * image.shape[1]), int(right_knee.y * image.shape[0])), (int(right_ankle.x * image.shape[1]), int(right_ankle.y * image.shape[0])), (0, 255, 0), 2)
+
+        # Draw left leg
+        cv2.line(image, (int(left_hip.x * image.shape[1]), int(left_hip.y * image.shape[0])), (int(left_knee.x * image.shape[1]), int(left_knee.y * image.shape[0])), (0, 255, 0), 2)
+        cv2.line(image, (int(left_knee.x * image.shape[1]), int(left_knee.y * image.shape[0])), (int(left_ankle.x * image.shape[1]), int(left_ankle.y * image.shape[0])), (0, 255, 0), 2)
+
+
         # Get arm positions
-        right_angle = get_angle(
-            (right_shoulder.x, right_shoulder.y),
-            (right_elbow.x, right_elbow.y),
-            (right_wrist.x, right_wrist.y)
-        )
+        right_arm_angle = get_angle((right_shoulder.x, right_shoulder.y),(right_elbow.x, right_elbow.y),(right_wrist.x, right_wrist.y)) # angle shoulder - elbow - wrist
+        left_arm_angle = get_angle((left_shoulder.x, left_shoulder.y),(left_elbow.x, left_elbow.y),(left_wrist.x, left_wrist.y))
 
-        left_angle = get_angle(
-            (left_shoulder.x, left_shoulder.y),
-            (left_elbow.x, left_elbow.y),
-            (left_wrist.x, left_wrist.y)
-        )
+        right_elbow_angle = get_angle((right_hip.x, right_hip.y),(right_shoulder.x, right_shoulder.y),(right_elbow.x, right_elbow.y)) # angle hip - shoulder - elbows
+        left_elbow_angle = get_angle((left_hip.x, left_hip.y),(left_shoulder.x, left_shoulder.y),(left_elbow.x, left_elbow.y),)
 
-        # Determine arm position
-        tolerance_angle = 30  # Adjust tolerance as needed
-        right_position = "straight" if right_angle > (180 - tolerance_angle) else "bent"
-        left_position = "straight" if left_angle > (180 - tolerance_angle) else "bent"
+        right_leg_angle = get_angle((right_hip.x, right_hip.y),(right_shoulder.x, right_shoulder.y),(right_knee.x, right_knee.y)) # angle hip - knee - ankle
+        left_leg_angle = get_angle((left_hip.x, left_hip.y),(left_shoulder.x, left_shoulder.y),(left_knee.x, left_knee.y))
 
-        if right_elbow.y < right_shoulder.y and right_wrist.y < right_elbow.y:
-            right_position = "up"
-        elif right_elbow.y > right_shoulder.y and right_wrist.y > right_elbow.y:
-            right_position = "down"
+        left_knee_angle = get_angle((left_hip.x, left_hip.y),(right_shoulder.x, right_shoulder.y),(left_knee.x, left_knee.y)) # angle shoulder - hip . knee
+        right_knee_angle = get_angle((right_hip.x, right_hip.y),(right_shoulder.x, right_shoulder.y),(right_knee.x, right_knee.y))
 
-        if left_elbow.y < left_shoulder.y and left_wrist.y < left_elbow.y:
-            left_position = "up"
-        elif left_elbow.y > left_shoulder.y and left_wrist.y > left_elbow.y:
-            left_position = "down"
 
-        # Determine overall arm positions
-        if right_position == "up" and left_position == "up":
-            arm_status = "both up"
-        elif right_position == "down" and left_position == "down":
-            arm_status = "both down"
-        elif right_position == "up" and left_position == "down":
-            arm_status = "right up, left down"
-        elif right_position == "down" and left_position == "up":
-            arm_status = "right down, left up"
+        tolerance_angle = 20
+
+        right_arm_position = "straight" if right_arm_angle > (180 - tolerance_angle) else "bent"
+        left_arm_position = "straight" if left_arm_angle > (180 - tolerance_angle) else "bent"
+        right_leg_position = "straight" if right_leg_angle > (180 - tolerance_angle) else "bent"
+        left_leg_position = "straight" if left_leg_angle > (180 - tolerance_angle) else "bent"
+
+        right_arm_dir = "up" if right_elbow.y < right_shoulder.y and right_wrist.y < right_elbow.y else "down"
+        left_arm_dir = "up" if left_elbow.y < left_shoulder.y and left_wrist.y < left_elbow.y else "down"
+
+
+        # Determine legs position
+        letter = None
+        legs_open = detect_leg_position(left_knee, right_knee, left_ankle, right_ankle)
+        print("right_elbow_angle ", right_elbow_angle, "left_elbow_angle ", left_elbow_angle)
+
+        if legs_open == 'open': # X
+            print("checking for X-pose")
+            if right_arm_position == "straight" and left_arm_position == "straight":
+                if 160 - tolerance_angle < right_elbow_angle < 160 + tolerance_angle and 160 - tolerance_angle < left_elbow_angle < 160 + tolerance_angle:
+                    letter = 'X'
         else:
-            arm_status = f"right {right_position}, left {left_position}"
+            # I, V, L, C, D, M
+            print("checking for I, V, L, C, D, M poses")
+            if right_arm_position == "straight" and left_arm_position == "straight":
+                if right_arm_dir == "down" and left_arm_dir == "down":
+                    if -tolerance_angle < right_elbow_angle <  tolerance_angle and  -tolerance_angle < left_elbow_angle <  tolerance_angle:
+                        letter = 'I'
+                elif right_arm_dir == "down" and left_arm_dir == "up":
+                    if 90 - tolerance_angle < right_elbow_angle < 90 + tolerance_angle and 170 - tolerance_angle < left_elbow_angle < 170 + tolerance_angle:
+                        letter = 'L'
+                elif right_arm_dir == "up" and left_arm_dir == "up":
+                    if 170 - tolerance_angle < right_elbow_angle < 170 + tolerance_angle and 170 - tolerance_angle < left_elbow_angle < 170 + tolerance_angle:
+                        letter = 'V'
+            elif right_arm_position == "bent" and left_arm_position == "bent":
+                if right_arm_dir == "down" and left_arm_dir == "up":
+                    if 45 - tolerance_angle < right_elbow_angle < 45 + tolerance_angle and 160 - tolerance_angle < left_elbow_angle < 160 + tolerance_angle:
+                        letter = 'C'
+                elif right_arm_dir == "down" and left_arm_dir == "down":
+                    if 90 - tolerance_angle < right_arm_angle < 90 + tolerance_angle and 90 - tolerance_angle < left_arm_angle < 90 + tolerance_angle:
+                        letter = 'M'
+            elif right_arm_position == "bent" and left_arm_position == "straight":
+                if right_arm_dir == "down" and left_arm_dir == "down":
+                    if 120 - tolerance_angle < right_arm_angle < 120 + tolerance_angle and  -tolerance_angle < left_elbow_angle <  tolerance_angle:
+                        letter = 'D'
 
-        # Draw the arms with a different color.
-        for connection in RIGHT_ARM_CONNECTIONS:
-            start_idx = connection[0].value
-            end_idx = connection[1].value
-            if results.pose_landmarks.landmark[start_idx].visibility > 0.5 and results.pose_landmarks.landmark[end_idx].visibility > 0.5:
-                start_point = (int(results.pose_landmarks.landmark[start_idx].x * image.shape[1]),
-                               int(results.pose_landmarks.landmark[start_idx].y * image.shape[0]))
-                end_point = (int(results.pose_landmarks.landmark[end_idx].x * image.shape[1]),
-                             int(results.pose_landmarks.landmark[end_idx].y * image.shape[0]))
-                cv2.line(image, start_point, end_point, (255, 0, 0), 3)
-
-        for connection in LEFT_ARM_CONNECTIONS:
-            start_idx = connection[0].value
-            end_idx = connection[1].value
-            if results.pose_landmarks.landmark[start_idx].visibility > 0.5 and results.pose_landmarks.landmark[end_idx].visibility > 0.5:
-                start_point = (int(results.pose_landmarks.landmark[start_idx].x * image.shape[1]),
-                               int(results.pose_landmarks.landmark[start_idx].y * image.shape[0]))
-                end_point = (int(results.pose_landmarks.landmark[end_idx].x * image.shape[1]),
-                             int(results.pose_landmarks.landmark[end_idx].y * image.shape[0]))
-                cv2.line(image, start_point, end_point, (255, 0, 0), 3)
-
-        # Display the arm status on the image.
-        cv2.putText(image, arm_status, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+        if letter:
+            cv2.putText(image, f'Detected letter: {letter}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
     # Display the resulting image.
     cv2.imshow('MediaPipe Pose', image)
