@@ -20,9 +20,13 @@ def recognize_speech_with_openai():
     except Exception as e:
         return f"Error: {e}"
 
-system_prompt = '''You are a helpful assistant for the teaching Roman numbers. Your task is to take into account numbers from the user and traduce them into roman numbers, like '17' becomes 'XVII' and '10' becomes 'X' or '2020' becomes 'MMXX' and so on.
-                   You only and only reply with the Roman number you traduced. If you don't understand something, return 0.
-                '''
+system_prompt_numbers = '''
+                        You help in teaching Roman numbers. Your task is to take into account numbers from the user and traduce them into roman numbers, like '17' becomes 'XVII' and '10' becomes 'X' or '2020' becomes 'MMXX' and so on.
+                        You only and only reply with the Roman number you traduced. Try your best to understand the number pronounced. Ignore everything that is not a number.
+                        '''
+system_prompt_difficulty = '''
+                            You are a helpful assistant that recognises three words 'Easy','Medium', or 'Hard'. If you don't understand something, return 'Easy'. Ignore everything else.
+                            '''
 
 def generate_corrected_transcript(temperature, system_prompt, transcription):
 
@@ -42,9 +46,14 @@ def generate_corrected_transcript(temperature, system_prompt, transcription):
     )
     return response.choices[0].message.content
 
-def listen():
+def listen(mode):
     recognizer = sr.Recognizer()
     microphone = sr.Microphone()
+
+    if mode=='numbers':
+        system_prompt=system_prompt_numbers
+    elif mode=='difficulty':
+        system_prompt=system_prompt_difficulty
 
     with microphone as source:
         recognizer.adjust_for_ambient_noise(source)
