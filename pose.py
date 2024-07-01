@@ -89,7 +89,7 @@ def findLetter(timer):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = pose.process(image_rgb)     # Process the image and detect the pose.
 
-
+        cv2.putText(image, str(int(timer-(time.time()-start_time))), (1100, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
 
         # Draw the pose annotation on the image.
         if results.pose_landmarks:
@@ -191,9 +191,12 @@ def findLetter(timer):
                         if 120 - tolerance_angle < right_arm_angle < 120 + tolerance_angle and  -tolerance_angle < left_elbow_angle <  tolerance_angle:
                             letter = 'D'
 
+
             if letter:
-                cv2.putText(image, f'Detected letter: {letter}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                cv2.putText(image, f'Detected letter: {letter}', (50, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                 letters[letter]=letters[letter]+1
+            else:
+                cv2.putText(image, f'NO LETTER RECOGNISED', (50, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
         # Display the resulting image.
         cv2.imshow('Roman Letter Pose', image)
@@ -202,6 +205,7 @@ def findLetter(timer):
             break
 
         elapsed_time = time.time() - start_time
+
         if elapsed_time >= timer:
             break
 
@@ -212,3 +216,6 @@ def findLetter(timer):
 
     print(f"The letter with the maximum score is: {max_key}")
     return max_key
+
+if __name__ == '__main__':
+    findLetter(10)
