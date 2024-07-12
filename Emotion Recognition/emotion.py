@@ -10,11 +10,18 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 # Start capturing video
 cap = cv2.VideoCapture(0)
 
+# Track emotions and engagement
 emotion_history = []
 dominant_emotions = []
+engagement_scores = []
+engagement_threshold = 0.5  # Define a threshold for engagement
 
 # Record the start time
 start_time = time.time()
+
+# Emotion weights
+positive_emotions = {'happy': 1, 'angry': 1, 'surprise': 1}
+negative_emotions = {'neutral': -1, 'sad': -1, 'disgust': -1, 'fear': -1}
 
 while True:
     # Capture frame-by-frame
@@ -44,8 +51,7 @@ while True:
         except:
             print("An exception occurred")
 
-        color=(0,0,0)
-
+        color = (0, 0, 0)
         if emotion == 'happy':
             color = (0, 255, 255)  # Yellow
         elif emotion == 'sad':
@@ -59,19 +65,29 @@ while True:
         elif emotion == 'surprise':
             color = (0, 165, 255)  # Orange
         elif emotion == 'disgust':
-            color = (0, 255, 0)  # Orange
+            color = (0, 255, 0)  # Green
 
         cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
         cv2.putText(frame, emotion, (x, y - 10), cv2.FONT_HERSHEY_DUPLEX, 0.9, color, 2)
 
-        # Calculate the elapsed time
-        elapsed_time = time.time() - start_time
-
-        #print(emotion, elapsed_time)
-
-        # Append the emotion and elapsed time to the history
+        # Append the emotion to the history
         emotion_history.append(result[0]['emotion'])
         dominant_emotions.append(emotion)
+
+        # Calculate engagement score based on weighted emotions
+        engagement_score = 0
+        for emo, confidence in result[0]['emotion'].items():
+            if emo in positive_emotions:
+                engagement_score += confidence * positive_emotions[emo]
+            elif emo in negative_emotions:
+                engagement_score += confidence * negative_emotions[emo]
+
+        engagement_scores.append(engagement_score)
+
+    # Display the engagement score on the frame
+    if len(engagement_scores) > 0:
+        avg_engagement_score = sum(engagement_scores[-30:]) / min(len(engagement_scores), 30)  # Rolling average over the last 30 frames
+        cv2.putText(frame, f'Engagement Score: {avg_engagement_score:.2f}', (10, 30), cv2.FONT_HERSHEY_DUPLEX, 0.9, (255, 255, 255), 2)
 
     # Display the resulting frame
     cv2.imshow('Real-time Emotion Detection', frame)
@@ -84,14 +100,25 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 
-emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral']
-time_series_data = {emotion: [] for emotion in emotions}
+# Plotting engagement scores over time
+plt.figure(figsize=(12, 6))
+plt.plot(range(len(engagement_scores)), engagement_scores, label='Engagement Score', color='blue')
+plt.axhline(y=engagement_threshold, color='red', linestyle='--', label='Engagement Threshold')
+plt.xlabel('Frame')
+plt.ylabel('Engagement Score')
+plt.title('Engagement Score Over Time')
+plt.legend(loc='upper right')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
 
-for sample in emotion_history:
-    for emotion in emotions:
-        time_series_data[emotion].append(sample[emotion])
+# Display dominant emotions
+emotion_counts = Counter(dominant_emotions)
+emotions = list(emotion_counts.keys())
+counts = list(emotion_counts.values())
 
-# Color coding for each emotion
+# Plotting the bar chart for dominant emotions
+plt.figure(figsize=(10, 6))
 color_dict = {
     'angry': 'red',
     'disgust': 'green',
@@ -101,33 +128,7 @@ color_dict = {
     'surprise': 'orange',
     'neutral': 'black'
 }
-
-# Plotting the time series for each emotion with specified colors
-plt.figure(figsize=(12, 6))
-
-for emotion in emotions:
-    plt.plot(range(len(emotion_history)), time_series_data[emotion], label=emotion, color=color_dict[emotion])
-
-plt.xlabel('Sample')
-plt.ylabel('Confidence')
-plt.title('Emotion Confidence Over Samples')
-plt.legend(loc='upper right')
-plt.grid(True)
-
-plt.tight_layout()
-plt.show()
-
-emotion_counts = Counter(dominant_emotions)
-
-# Extract emotions and their counts from Counter object
-emotions = list(emotion_counts.keys())
-counts = list(emotion_counts.values())
-
-# Plotting the bar chart
-plt.figure(figsize=(10, 6))
 bars = plt.bar(emotions, counts, color=[color_dict[emotion] for emotion in emotions])
-
-# Adding labels and title
 plt.xlabel('Emotion')
 plt.ylabel('Count')
 plt.title('Dominant Emotions Over Time')

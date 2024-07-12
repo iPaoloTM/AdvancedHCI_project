@@ -218,4 +218,4 @@ def findLetter(timer):
     return max_key
 
 if __name__ == '__main__':
-    findLetter(10)
+    findLetter(1000)

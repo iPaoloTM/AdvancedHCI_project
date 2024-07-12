@@ -14,3 +14,6 @@ def read(text):
         response.stream_to_file("speech.mp3")
 
     playsound('speech.mp3')
+
+if __name__ == '__main__':
+    main()
