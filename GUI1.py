@@ -85,7 +85,9 @@ class RomanNumberApp:
         self.hard_label = tk.Label(self.root, text="hard", font=(self.font_family, 40), fg='white', bg="red")
         self.hard_label.pack(pady=5)
 
+        threading.Thread(target=self.capture_difficulty).start()
 
+    def capture_difficulty(self):
         text2speech.read("Choose between easy, medium, or hard to set difficulty level")
         self.start_blinking()  # Start blinking the dot
 
@@ -97,15 +99,12 @@ class RomanNumberApp:
         self.hard_label.pack_forget()
 
         if difficulty:
-            self.start_game(difficulty)
+             self.root.after(0, lambda: self.start_game(difficulty))
         else:
             self.label.config(text="Failed to capture difficulty. Please try again.")
             self.start_button.pack(pady=10)
 
     def start_game(self, difficulty):
-
-
-
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -134,10 +133,9 @@ class RomanNumberApp:
         self.number_label.config(text=number_to_guess, fg="#8c7b75")
 
         print("Random number is: " + translated_number)
-        text2speech.read("The number to guess is..."+number_to_guess)
+        text2speech.read("Pose like the Roman number " + number_to_guess)
 
         self.label.config(text="Pose like the nvmber!")
-
 
         poses = []
 
@@ -151,9 +149,7 @@ class RomanNumberApp:
             self.display_result("error", number_to_guess)
 
     def display_result(self, result, number_to_guess):
-
         self.label.config(text="RESVLTS")
-
 
         if result == number_to_guess:
             self.result_label.config(text="Success", fg="#98c379")
@@ -164,10 +160,9 @@ class RomanNumberApp:
             self.result_label.config(text="Failure", fg="#e06c75")
             pygame.mixer.music.load("./assets/defeat.mp3")
             pygame.mixer.music.play()
-            text2speech.read("The correct answer was "+number_to_guess+"! Better luck next time!")
+            text2speech.read("The correct answer was " + number_to_guess + "! Better luck next time!")
 
         self.restart_button.pack(pady=10)  # Show the restart button at the end of the game
-
 
     def restart_game(self):
         self.number_label.config(text="")
