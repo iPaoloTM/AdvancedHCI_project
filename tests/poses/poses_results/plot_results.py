@@ -24,7 +24,7 @@ def main():
             with open(file_path, 'r') as file:
                 content = file.read().strip()
 
-            
+
 
             # Check if the content matches the correct content
             if content == correct_content:
@@ -36,9 +36,9 @@ def main():
             incorrect_content_count += 1
 
     # Data for the pie chart
-    labels = 'Correct Content', 'Incorrect Content'
+    labels = ['Correct', 'Incorrect']
     sizes = [correct_content_count, incorrect_content_count]
-    colors = ['#ff9999', '#66b3ff']
+    colors = ['green', 'red']
     explode = (0.1, 0)  # explode the first slice (Correct Content)
 
     # Plot the pie chart

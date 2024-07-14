@@ -6,6 +6,7 @@ import text2speech
 from openai import OpenAI
 import pygame
 import threading
+import time
 
 client = OpenAI()
 
@@ -46,11 +47,11 @@ class RomanNumberApp:
         self.label = tk.Label(root, text="ROMAN NVMBERS RALLY", bg="#c4b59b", fg="#282c34", font=(self.font_family, 22, 'bold'))
         self.label.pack(pady=50)
 
-        self.label2 = tk.Label(root, text="To start learning, click the button!", bg="#c4b59b", fg="#282c34", font=(self.font_family, 18, 'bold'))
+        self.label2 = tk.Label(root, text="To start posing, click the button!", bg="#c4b59b", fg="#282c34", font=(self.font_family, 18, 'bold'))
         self.label2.pack(pady=20)
 
-        pygame.mixer.music.load("./assets/start.mp3")
-        pygame.mixer.music.play()
+        # pygame.mixer.music.load("./assets/start.mp3")
+        # pygame.mixer.music.play()
 
         self.start_button = tk.Button(root, text="START", command=self.choose_difficulty, bg="#c4b59b", fg="#282c34", font=(self.font_family, 14, 'bold'))
         self.start_button.pack(pady=10)
@@ -67,6 +68,10 @@ class RomanNumberApp:
         self.restart_button = tk.Button(root, text="RESTART", command=self.restart_game, bg="#e5c07b", fg="#282c34", font=(self.font_family, 14, 'bold'))
         self.restart_button.pack(pady=10)
         self.restart_button.pack_forget()  # Hide the restart button initially
+
+        self.end_button = tk.Button(root, text="END", command=self.end_game, bg="#e5c07b", fg="#282c34", font=(self.font_family, 14, 'bold'))
+        self.end_button.pack(pady=10)
+        self.end_button.pack_forget()  # Hide the restart button initially
 
         self.listening_dot = tk.Canvas(root, width=20, height=20, bg='white', highlightthickness=0)
         self.dot = self.listening_dot.create_oval(5, 5, 15, 15, fill='white')
@@ -105,6 +110,7 @@ class RomanNumberApp:
             self.start_button.pack(pady=10)
 
     def start_game(self, difficulty):
+
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -130,12 +136,16 @@ class RomanNumberApp:
 
         translated_number = response.choices[0].message.content
 
-        self.number_label.config(text=number_to_guess, fg="#8c7b75")
+
+
+        self.number_label.config(text=translated_number+" ", fg="#8c7b75")
 
         print("Random number is: " + translated_number)
-        text2speech.read("Pose like the Roman number " + number_to_guess)
+        text2speech.read("Pose like the Roman number " + translated_number)
 
         self.label.config(text="Pose like the nvmber!")
+
+        time.sleep(2)
 
         poses = []
 
@@ -150,26 +160,33 @@ class RomanNumberApp:
 
     def display_result(self, result, number_to_guess):
         self.label.config(text="RESVLTS")
+        self.number_label.config(text=number_to_guess, fg="#8c7b75")
 
         if result == number_to_guess:
-            self.result_label.config(text="Success", fg="#98c379")
+            self.result_label.config(text="Success", fg='white', bg="green")
             pygame.mixer.music.load("./assets/victory.mp3")
             pygame.mixer.music.play()
             text2speech.read("Grrreat!")
         else:
-            self.result_label.config(text="Failure", fg="#e06c75")
+            self.result_label.config(text="Failure", fg='white', bg="red")
             pygame.mixer.music.load("./assets/defeat.mp3")
             pygame.mixer.music.play()
             text2speech.read("The correct answer was " + number_to_guess + "! Better luck next time!")
 
         self.restart_button.pack(pady=10)  # Show the restart button at the end of the game
+        self.end_button.pack(pady=10)  # Show the end button at the end of the game
 
     def restart_game(self):
         self.number_label.config(text="")
         self.result_label.config(text="")
+        self.number_label.config(text="")
         self.label.config(text="Press the button to start the game")
         self.start_button.pack(pady=10)
         self.restart_button.pack_forget()  # Hide the restart button when restarting the game
+        self.end_button.pack_forget()
+
+    def end_game(self):
+        exit()
 
     def start_blinking(self):
         self.listening_dot.pack(pady=10)
@@ -188,7 +205,7 @@ class RomanNumberApp:
             self.root.after(500, self.blink)
 
 
-if __name__ == '__main__':
+def start():
     root = tk.Tk()
     app = RomanNumberApp(root)
     root.mainloop()

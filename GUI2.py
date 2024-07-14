@@ -19,14 +19,14 @@ class RomanNumberGame:
 
         self.font_family = 'Trajan Pro'  # Set the font to Trajan Pro or similar
 
-        self.label = tk.Label(root, text="ROMAN NVMBERS RALLY", bg="#c4b59b", fg="#282c34", font=(self.font_family, 22, 'bold'))
+        self.label = tk.Label(root, text="VOICE MODE", bg="#c4b59b", fg="#282c34", font=(self.font_family, 22, 'bold'))
         self.label.pack(pady=50)
 
-        self.label2 = tk.Label(root, text="To start learning, click the button!", bg="#c4b59b", fg="#282c34", font=(self.font_family, 18, 'bold'))
+        self.label2 = tk.Label(root, text="To start speaking, click the button!", bg="#c4b59b", fg="#282c34", font=(self.font_family, 18, 'bold'))
         self.label2.pack(pady=20)
 
-        pygame.mixer.music.load("./assets/start.mp3")
-        pygame.mixer.music.play()
+        # pygame.mixer.music.load("./assets/start.mp3")
+        # pygame.mixer.music.play()
 
         self.start_button = tk.Button(root, text="START", command=self.choose_difficulty, bg="#c4b59b", fg="#282c34", font=(self.font_family, 14, 'bold'))
         self.start_button.pack(pady=10)
@@ -43,6 +43,10 @@ class RomanNumberGame:
         self.restart_button = tk.Button(root, text="RESTART", command=self.restart_game, bg="#e5c07b", fg="#282c34", font=(self.font_family, 14, 'bold'))
         self.restart_button.pack(pady=10)
         self.restart_button.pack_forget()  # Hide the restart button initially
+
+        self.end_button = tk.Button(root, text="END", command=self.end_game, bg="#e5c07b", fg="#282c34", font=(self.font_family, 14, 'bold'))
+        self.end_button.pack(pady=10)
+        self.end_button.pack_forget()  # Hide the restart button initially
 
         self.listening_dot = tk.Canvas(root, width=20, height=20, bg='white', highlightthickness=0)
         self.dot = self.listening_dot.create_oval(5, 5, 15, 15, fill='white')
@@ -75,7 +79,7 @@ class RomanNumberGame:
         self.hard_label.pack_forget()
 
         if difficulty:
-            self.start_game(difficulty)
+             self.root.after(0, lambda: self.start_game(difficulty))
         else:
             self.label.config(text="Failed to capture difficulty. Please try again.")
             self.start_button.pack(pady=10)
@@ -125,12 +129,12 @@ class RomanNumberGame:
 
         if number != 0:
             if number == number_to_guess:
-                self.result_label.config(text="Success", fg="green")
+                self.result_label.config(text="Success", fg='white', bg="green")
                 pygame.mixer.music.load("./assets/victory.mp3")
                 pygame.mixer.music.play()
             else:
                 self.correct_number_label.config(text=translated_number)
-                self.result_label.config(text="Unlucky!", fg="red")
+                self.result_label.config(text="Unlucky!", fg='white', bg="red")
                 pygame.mixer.music.load("./assets/defeat.mp3")
                 pygame.mixer.music.play()
                 text2speech.read("The correct answer was "+translated_number+"! Better luck next time!")
@@ -138,6 +142,7 @@ class RomanNumberGame:
             self.result_label.config(text="Failed while listening for the numbers", fg="red")
 
         self.restart_button.pack(pady=10)  # Show the restart button at the end of the game
+        self.end_button.pack(pady=10)  # Show the end button at the end of the game
 
     def restart_game(self):
         self.number_label.config(text="")
@@ -145,6 +150,10 @@ class RomanNumberGame:
         self.label.config(text="Press the button to start the game")
         self.start_button.pack(pady=10)
         self.restart_button.pack_forget()  # Hide the restart button when restarting the game
+        self.end_button.pack_forget()  # Hide the end button when restarting the game
+
+    def end_game(self):
+        exit()
 
     def start_blinking(self):
         self.listening_dot.pack(pady=10)
@@ -162,7 +171,7 @@ class RomanNumberGame:
             self.listening_dot.itemconfig(self.dot, fill=new_color)
             self.root.after(500, self.blink)
 
-if __name__ == '__main__':
+def start():
     root = tk.Tk()
     app = RomanNumberGame(root)
     root.mainloop()

@@ -20,6 +20,10 @@ def recognize_speech_with_openai():
     except Exception as e:
         return f"Error: {e}"
 
+system_prompt_start = '''
+                        You are an helpful AI assistant, and your task is to recognize two words: 'body' or 'voice'. Only answer with 'body' or 'voice'.
+                        '''
+
 system_prompt_numbers = '''
                         You help in teaching Roman numbers. Your task is to take into account numbers from the user and traduce them into roman numbers, like '17' becomes 'XVII' and '10' becomes 'X' or '2020' becomes 'MMXX' and so on.
                         You only and only reply with the Roman number you traduced. Try your best to understand the number pronounced. Ignore everything that is not a number.
@@ -50,7 +54,9 @@ def listen(mode):
     recognizer = sr.Recognizer()
     microphone = sr.Microphone()
 
-    if mode=='numbers':
+    if mode=='start':
+        system_prompt=system_prompt_start
+    elif mode=='numbers':
         system_prompt=system_prompt_numbers
     elif mode=='difficulty':
         system_prompt=system_prompt_difficulty
